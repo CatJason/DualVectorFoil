@@ -22,7 +22,8 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         model = Model(context, "pinkFox.obj", "pinkFox.mtl")
 
-        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, -36f, 0f, 0f, 0f, 0f, 1f, 0f)
+        // 将摄像机的位置向后移动一段距离
+        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, -54f, 0f, 0f, 0f, 0f, 1f, 0f) // 改为 -54f，原值为 -36f
     }
 
     override fun onDrawFrame(gl: GL10?) {
