@@ -17,7 +17,7 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         setRenderer(renderer)
 
         // 仅在绘制数据发生变化时才绘制视图
-        renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+        renderMode = RENDERMODE_CONTINUOUSLY
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

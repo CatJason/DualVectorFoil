@@ -9,8 +9,7 @@ import javax.microedition.khronos.opengles.GL10
 class MyGLRenderer : GLSurfaceView.Renderer {
 
     private lateinit var line: Line
-    private lateinit var square: Square
-    private var squarePosition = -1.0f // 初始位置
+    private lateinit var cube: Cube
     private var lastTime: Long = 0
 
     private val projectionMatrix = FloatArray(16)
@@ -19,15 +18,15 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         // 设置背景颜色
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
 
-        // 初始化线和正方形对象
+        // 初始化线和立方体对象
         line = Line()
-        square = Square()
+        cube = Cube()
         lastTime = System.currentTimeMillis()
 
-        // 设置视图矩阵
-        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, -3f, 0f, 0f, 0f, 0f, 1f, 0f)
+        // 设置视图矩阵，拉远摄像机位置以容纳旋转的立方体
+        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, -6f, 0f, 0f, 0f, 0f, 1f, 0f)
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -40,25 +39,21 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // 计算组合矩阵
         Matrix.multiplyMM(mVPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        // 绘制滑动的正方形
+        // 更新自转的立方体
         val currentTime = System.currentTimeMillis()
         val elapsedTime = (currentTime - lastTime) / 1000.0f // 计算已过去的时间（秒）
-
-        squarePosition += elapsedTime // 更新正方形位置
-        if (squarePosition > 1.0f) {
-            squarePosition = -1.0f // 重置位置
-        }
         lastTime = currentTime
 
-        square.draw(squarePosition, mVPMatrix)
+        // 调用立方体的绘制方法
+        cube.draw(mVPMatrix) // 传递计算好的组合矩阵
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
         val ratio: Float = width.toFloat() / height.toFloat()
 
-        // 设置正交投影矩阵
-        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 7f)
+        // 设置透视投影矩阵，增加视野角度以容纳旋转的立方体
+        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 10f)
     }
 
     companion object {
