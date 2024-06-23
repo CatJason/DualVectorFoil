@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MySurfaceView"
+rootProject.name = "DualVectorFoil"
 include(":app")
