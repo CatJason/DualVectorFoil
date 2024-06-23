@@ -15,6 +15,7 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val viewMatrix = FloatArray(16)
     private val mVPMatrix = FloatArray(16)
     private val rotationMatrix = FloatArray(16)
+    private var angleY = 0f
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
@@ -29,7 +30,11 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
-        Matrix.setRotateM(rotationMatrix, 0, 0f, 0f, 1f, 0f)
+        // 更新旋转角度
+        angleY += 0.5f
+
+        // 创建旋转矩阵
+        Matrix.setRotateM(rotationMatrix, 0, angleY, 0f, 1f, 0f)
         Matrix.multiplyMM(mVPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
         Matrix.multiplyMM(mVPMatrix, 0, mVPMatrix, 0, rotationMatrix, 0)
 

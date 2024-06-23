@@ -51,8 +51,6 @@ class Model(context: Context, objFileName: String, mtlFileName: String) {
 
     private val mMVPMatrix = FloatArray(16)
     private val mModelMatrix = FloatArray(16)
-    private var angleX = 0f
-    private var angleY = 0f
 
     init {
         val objLoader = ObjLoader(context, objFileName, mtlFileName)
@@ -125,15 +123,10 @@ class Model(context: Context, objFileName: String, mtlFileName: String) {
             val drawListBuffer = drawListBuffers[material]
             if (drawListBuffer != null) {
                 GLES20.glDrawElements(GLES20.GL_TRIANGLES, drawListBuffer.capacity(), GLES20.GL_UNSIGNED_SHORT, drawListBuffer)
-            } else {
-                Log.w("Model", "No draw list buffer found for material: $material")
             }
         }
 
         GLES20.glDisableVertexAttribArray(positionHandle)
         GLES20.glDisableVertexAttribArray(texCoordHandle)
-
-        angleX += 0.4f
-        angleY += 0.6f
     }
 }
