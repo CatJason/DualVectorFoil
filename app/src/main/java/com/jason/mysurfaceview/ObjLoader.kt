@@ -1,6 +1,7 @@
 package com.jason.mysurfaceview
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.opengl.GLES20
 import android.opengl.GLUtils
@@ -104,13 +105,17 @@ class ObjLoader(context: Context, objFileName: String, mtlFileName: String) {
             val inputStream = context.assets.open(fileName)
             val bitmap = BitmapFactory.decodeStream(inputStream)
 
+            // Flip the bitmap vertically
+            val flippedBitmap = flipBitmapVertically(bitmap)
+
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0])
-            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, flippedBitmap, 0)
 
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
 
             bitmap.recycle()
+            flippedBitmap.recycle()
             Log.d("ObjLoader", "Texture loaded successfully: $fileName")
         } else {
             Log.e("ObjLoader", "Error generating texture handle for: $fileName")
@@ -118,5 +123,12 @@ class ObjLoader(context: Context, objFileName: String, mtlFileName: String) {
         }
 
         return textureHandle[0]
+    }
+
+    private fun flipBitmapVertically(bitmap: Bitmap): Bitmap {
+        val matrix = android.graphics.Matrix().apply {
+            preScale(1.0f, -1.0f)
+        }
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 }
