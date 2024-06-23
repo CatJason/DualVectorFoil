@@ -91,6 +91,7 @@ class Cube {
     private val mModelMatrix = FloatArray(16)
     private var angleX = 0f
     private var angleY = 0f
+    private var positionX = -1.0f // 初始位置，屏幕左侧
 
     init {
         // 初始化顶点字节缓冲区，用于存放形状的坐标
@@ -131,7 +132,15 @@ class Cube {
         }
     }
 
-    fun draw(projectionMatrix: FloatArray) {
+    fun draw(projectionMatrix: FloatArray, deltaTime: Float) {
+        // 更新位置
+        positionX += deltaTime * 2 // 每秒钟从左向右移动
+
+        // 如果超出右边界，则重置到最左边
+        if (positionX > 1.0f) {
+            positionX = -1.0f
+        }
+
         // 将程序添加到OpenGL ES环境中
         GLES20.glUseProgram(mProgram)
 
@@ -152,6 +161,7 @@ class Cube {
 
         // 计算模型视图投影矩阵
         Matrix.setIdentityM(mModelMatrix, 0)
+        Matrix.translateM(mModelMatrix, 0, positionX, 0f, 0f) // 更新位置
         Matrix.scaleM(mModelMatrix, 0, 0.5f, 0.5f, 0.5f) // 缩小到原来的1/2
         Matrix.rotateM(mModelMatrix, 0, angleX, 1f, 0f, 0f) // X轴旋转
         Matrix.rotateM(mModelMatrix, 0, angleY, 0f, 1f, 0f) // Y轴旋转
@@ -195,6 +205,7 @@ class Cube {
 
         // 计算模型视图投影矩阵
         Matrix.setIdentityM(mModelMatrix, 0)
+        Matrix.translateM(mModelMatrix, 0, positionX, 0f, 0f) // 更新位置
         Matrix.scaleM(mModelMatrix, 0, 0.5f, 0.5f, 0.5f) // 缩小到原来的1/2
         Matrix.rotateM(mModelMatrix, 0, angleX, 1f, 0f, 0f) // X轴旋转
         Matrix.rotateM(mModelMatrix, 0, angleY, 0f, 1f, 0f) // Y轴旋转

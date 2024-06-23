@@ -41,11 +41,11 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         // 更新自转的立方体
         val currentTime = System.currentTimeMillis()
-        val elapsedTime = (currentTime - lastTime) / 1000.0f // 计算已过去的时间（秒）
+        val deltaTime = (currentTime - lastTime) / 1000.0f // 计算已过去的时间（秒）
         lastTime = currentTime
 
         // 调用立方体的绘制方法
-        cube.draw(mVPMatrix) // 传递计算好的组合矩阵
+        cube.draw(mVPMatrix, deltaTime) // 传递计算好的组合矩阵和时间增量
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
