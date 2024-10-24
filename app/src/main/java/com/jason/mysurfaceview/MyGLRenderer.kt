@@ -17,6 +17,7 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val mVPMatrix = FloatArray(16)
     private val modelMatrix = FloatArray(16)
     private val tempMatrix = FloatArray(16)
+    private val viewMatrixReflection = FloatArray(16)
 
     private var angleY = 0f
 
@@ -78,18 +79,24 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuffer)
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
-        // 设置模型矩阵：反射 + 旋转 + 平移
-        Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.scaleM(modelMatrix, 0, -1f, 1f, 1f)  // X轴反射
-        Matrix.rotateM(modelMatrix, 0, angleY, 0f, 1f, 0f)  // 应用与原模型相同的旋转
-        Matrix.translateM(modelMatrix, 0, 0f, 0f, -5f)  // 模型位置
+        // 设置反射视图矩阵
+        Matrix.setLookAtM(
+            viewMatrixReflection, 0,
+            0f, 0f, 10f,    // 摄像机位置反射到 Z=0 平面上
+            0f, 0f, 0f,     // 观察目标点不变
+            0f, 1f, 0f      // 头顶方向向上
+        )
 
+        // 设置模型矩阵：旋转 + 平移到反射位置
+        Matrix.setIdentityM(modelMatrix, 0)
+        Matrix.rotateM(modelMatrix, 0, angleY, 0f, 1f, 0f)  // 应用旋转
+        Matrix.translateM(modelMatrix, 0, 0f, 0f, 5f)  // 模型位置反射到 Z 轴正方向
 
         // 计算MVP矩阵
-        Matrix.multiplyMM(tempMatrix, 0, viewMatrix, 0, modelMatrix, 0)
+        Matrix.multiplyMM(tempMatrix, 0, viewMatrixReflection, 0, modelMatrix, 0)
         Matrix.multiplyMM(mVPMatrix, 0, projectionMatrix, 0, tempMatrix, 0)
 
-        // 绘制模型的镜像
+        // 绘制模型
         model.draw(mVPMatrix)
 
         // 解除帧缓冲绑定
