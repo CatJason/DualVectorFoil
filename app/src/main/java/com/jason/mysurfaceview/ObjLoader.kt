@@ -37,12 +37,17 @@ class ObjLoader(context: Context, objFileName: String, mtlFileName: String) {
         // Parse .mtl file
         var currentMaterial: String? = null
         mtlReader.forEachLine { line ->
-            val tokens = line.split("\\s+".toRegex())
+            val cleanLine = line.trim()
+            if (cleanLine.isEmpty() || cleanLine.startsWith("#")) return@forEachLine
+
+            val tokens = cleanLine.split("\\s+".toRegex())
+            if (tokens.isEmpty()) return@forEachLine
+
             when (tokens[0]) {
                 "newmtl" -> {
                     currentMaterial = tokens[1]
                 }
-                "map_Kd" -> {
+                "map_Kd", "map_Ks" -> {  // 处理 map_Ks 和 map_Kd
                     currentMaterial?.let {
                         val textureFile = tokens[1]
                         textureMap[it] = loadTexture(context, textureFile)

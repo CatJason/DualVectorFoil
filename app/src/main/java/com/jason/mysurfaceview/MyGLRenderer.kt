@@ -44,7 +44,7 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // 设置摄像机位置和视图矩阵
         Matrix.setLookAtM(
             viewMatrix, 0,
-            0f, 0f, -10f,   // 摄像机位置
+            0f, 0f, -20f,   // 摄像机位置
             0f, 0f, 0f,     // 观察目标点
             0f, 1f, 0f      // 头顶方向向上
         )

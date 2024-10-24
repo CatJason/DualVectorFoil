@@ -27,7 +27,7 @@ class MyGLSurfaceView(context: Context, attrs: AttributeSet? = null) : GLSurface
         windowManager.defaultDisplay.getMetrics(displayMetrics)
 
         val screenHeight = displayMetrics.heightPixels
-        val newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(screenHeight / 3, MeasureSpec.EXACTLY)
+        val newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(screenHeight, MeasureSpec.EXACTLY)
 
         super.onMeasure(widthMeasureSpec, newHeightMeasureSpec)
     }
