@@ -99,33 +99,45 @@ class Model(context: Context, objFileName: String, mtlFileName: String) {
         }
     }
 
-    fun draw(projectionMatrix: FloatArray) {
+    fun draw(viewProjectionMatrix: FloatArray) {
         GLES20.glUseProgram(mProgram)
 
+        // Apply the model transformations, including scaling
+        Matrix.setIdentityM(mModelMatrix, 0)
+        Matrix.scaleM(mModelMatrix, 0, 0.33f, 0.33f, 0.33f)  // Scale model to 1/3
+
+        // Calculate the MVP matrix (Model View Projection)
+        Matrix.multiplyMM(mMVPMatrix, 0, viewProjectionMatrix, 0, mModelMatrix, 0)
+
+        // Send the MVP matrix to the shader
+        mvpMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix")
+        GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mMVPMatrix, 0)
+
+        // Set up vertex position attribute
         positionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition").also {
             GLES20.glEnableVertexAttribArray(it)
             GLES20.glVertexAttribPointer(it, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, vertexStride, vertexBuffer)
         }
 
+        // Set up texture coordinate attribute
         texCoordHandle = GLES20.glGetAttribLocation(mProgram, "aTexCoord").also {
             GLES20.glEnableVertexAttribArray(it)
             GLES20.glVertexAttribPointer(it, 2, GLES20.GL_FLOAT, false, texCoordStride, textureBuffer)
         }
 
-        mvpMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix")
-        GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, projectionMatrix, 0)
-
+        // Bind and draw each material group with its texture
         materialTextures.forEach { (material, textureHandle) ->
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle)
             GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgram, "uTexture"), 0)
 
             val drawListBuffer = drawListBuffers[material]
-            if (drawListBuffer != null) {
-                GLES20.glDrawElements(GLES20.GL_TRIANGLES, drawListBuffer.capacity(), GLES20.GL_UNSIGNED_SHORT, drawListBuffer)
+            drawListBuffer?.let {
+                GLES20.glDrawElements(GLES20.GL_TRIANGLES, it.capacity(), GLES20.GL_UNSIGNED_SHORT, it)
             }
         }
 
+        // Disable vertex arrays after drawing
         GLES20.glDisableVertexAttribArray(positionHandle)
         GLES20.glDisableVertexAttribArray(texCoordHandle)
     }

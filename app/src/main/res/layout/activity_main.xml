@@ -5,29 +5,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
-
-    <ImageView
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/glContainer"
-        android:scaleType="centerCrop"
-        android:src="@drawable/background" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:textSize="50dp"
-        android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
-        android:textColor="@android:color/white"
-        android:background="@android:color/holo_red_dark"
-        android:text="二向箔计划启动"/>
-
     <FrameLayout
         android:id="@+id/glContainer"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
+        android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

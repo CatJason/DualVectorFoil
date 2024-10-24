@@ -7,7 +7,7 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.nio.ShortBuffer
 
-class Square {
+class Square2 {
 
     private val vertexShaderCode = """
         attribute vec4 vPosition;
