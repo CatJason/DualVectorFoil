@@ -42,7 +42,7 @@ class ObjLoader(context: Context, objFileName: String, mtlFileName: String) {
                 "newmtl" -> {
                     currentMaterial = tokens[1]
                 }
-                "map_Kd" -> {
+                "map_Kd", "map_Ks" -> {  // 处理 map_Ks 和 map_Kd
                     currentMaterial?.let {
                         val textureFile = tokens[1]
                         textureMap[it] = loadTexture(context, textureFile)
