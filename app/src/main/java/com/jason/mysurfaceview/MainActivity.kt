@@ -34,16 +34,9 @@ class MainActivity : AppCompatActivity() {
         glSurfaceView.onPause()
     }
 
-    /**
-     * A native method that is implemented by the 'mysurfaceview' native library,
-     * which is packaged with this application.
-     */
-    external fun stringFromJNI(): String
-
     companion object {
-        // Used to load the 'mysurfaceview' library on application startup.
         init {
-            System.loadLibrary("mysurfaceview")
+            System.loadLibrary("assimpd")
         }
     }
 }
