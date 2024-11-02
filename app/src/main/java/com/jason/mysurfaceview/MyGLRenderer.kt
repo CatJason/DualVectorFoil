@@ -21,19 +21,16 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
 
-        model = Model(context, "pinkFox.obj", "pinkFox.mtl")
+        model = Model(context, "pinkFox.obj")
 
-        // 将摄像机的位置向后移动一段距离
-        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, -54f, 0f, 0f, 0f, 0f, 1f, 0f) // 改为 -54f，原值为 -36f
+        // Set up camera view matrix
+        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, -54f, 0f, 0f, 0f, 0f, 1f, 0f)
     }
 
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
-        // 更新旋转角度
         angleY += 0.5f
-
-        // 创建旋转矩阵
         Matrix.setRotateM(rotationMatrix, 0, angleY, 0f, 1f, 0f)
         Matrix.multiplyMM(mVPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
         Matrix.multiplyMM(mVPMatrix, 0, mVPMatrix, 0, rotationMatrix, 0)
@@ -44,7 +41,6 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
         val ratio: Float = width.toFloat() / height.toFloat()
-
         Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 60f)
     }
 
@@ -53,6 +49,13 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
             val shader = GLES20.glCreateShader(type)
             GLES20.glShaderSource(shader, shaderCode)
             GLES20.glCompileShader(shader)
+
+            val compileStatus = IntArray(1)
+            GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0)
+            if (compileStatus[0] == 0) {
+                GLES20.glDeleteShader(shader)
+                throw RuntimeException("Shader compilation failed")
+            }
             return shader
         }
     }

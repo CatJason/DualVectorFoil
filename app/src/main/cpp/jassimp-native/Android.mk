@@ -1,8 +1,8 @@
 LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
-LOCAL_MODULE := jassimp
-LOCAL_SRC_FILES :=  src/jassimp.cpp
+LOCAL_MODULE := com.jassimp
+LOCAL_SRC_FILES :=  src/com.jassimp.cpp
 
 LOCAL_CFLAGS += -DJNI_LOG
 
