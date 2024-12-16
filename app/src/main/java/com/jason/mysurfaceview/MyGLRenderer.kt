@@ -48,6 +48,10 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
             0f, 0f, 0f,     // 观察目标点
             0f, 1f, 0f      // 头顶方向向上
         )
+
+        // 启用面剔除
+        GLES20.glEnable(GLES20.GL_CULL_FACE)
+        GLES20.glCullFace(GLES20.GL_BACK)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -82,32 +86,65 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // 设置反射视图矩阵
         Matrix.setLookAtM(
             viewMatrixReflection, 0,
-            0f, 0f, 10f,    // 摄像机位置反射到 Z=0 平面上
-            0f, 0f, 0f,     // 观察目标点不变
+            0f, 0f, 20f,    // 反射后的摄像机位置 (对称反射)
+            0f, 0f, 0f,     // 观察目标点
             0f, 1f, 0f      // 头顶方向向上
         )
 
-        // 设置模型矩阵：整体缩放 + y 轴缩放 + 旋转 + 平移到反射位置
+        // 设置模型矩阵
         Matrix.setIdentityM(modelMatrix, 0)
 
-        // 应用整体缩放
-        Matrix.scaleM(modelMatrix, 0, SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR)
+        // 根据 MIRROR_MODE 应用镜像变换
+        if (MIRROR_MODE == MIRROR_MODE_BACKWARD) {
+            // 镜子背对用户，沿 Z 轴镜像
+            Matrix.scaleM(modelMatrix, 0, 1f, 1f, -1f)
+        }
+
+        // 应用整体缩放（包括动态的 MODEL_SCALE）
+        Matrix.scaleM(modelMatrix, 0, SCALE_FACTOR * MODEL_SCALE, SCALE_FACTOR * MODEL_SCALE, SCALE_FACTOR * MODEL_SCALE)
 
         // 应用 y 轴额外缩放
         Matrix.scaleM(modelMatrix, 0, 1f, Y_STRETCH_FACTOR, 1f)  // 仅 y 轴缩放
 
-        // 应用旋转
-        Matrix.rotateM(modelMatrix, 0, angleY, 0f, 1f, 0f)  // 绕 y 轴旋转
+        // 根据 MIRROR_MODE 和 ROTATION_DIRECTION 调整旋转方向
+        val rotationMultiplier = when (ROTATION_DIRECTION) {
+            ROTATION_CLOCKWISE -> 1f
+            ROTATION_COUNTERCLOCKWISE -> -1f
+            else -> 1f
+        }
+
+        val mirrorAngleY = when (MIRROR_MODE) {
+            MIRROR_MODE_FORWARD -> -angleY * rotationMultiplier
+            MIRROR_MODE_BACKWARD -> angleY * rotationMultiplier
+            else -> angleY * rotationMultiplier
+        }
+
+        Matrix.rotateM(modelMatrix, 0, mirrorAngleY, 0f, 1f, 0f)  // 根据模式和方向旋转
 
         // 应用平移
-        Matrix.translateM(modelMatrix, 0, 0f, 0f, 5f)  // 模型位置反射到 Z 轴正方向
+        Matrix.translateM(modelMatrix, 0, 0f, 0f, 5f)  // 模型位置反射到 z 轴正方向
 
         // 计算 MVP 矩阵
         Matrix.multiplyMM(tempMatrix, 0, viewMatrixReflection, 0, modelMatrix, 0)
         Matrix.multiplyMM(mVPMatrix, 0, projectionMatrix, 0, tempMatrix, 0)
 
+        // 根据 MIRROR_MODE 调整面剔除
+        when (MIRROR_MODE) {
+            MIRROR_MODE_FORWARD -> {
+                // 正对用户时，剔除前面以显示反射后的正面
+                GLES20.glCullFace(GLES20.GL_FRONT)
+            }
+            MIRROR_MODE_BACKWARD -> {
+                // 背对用户时，剔除背面以显示模型的背面
+                GLES20.glCullFace(GLES20.GL_BACK)
+            }
+        }
+
         // 绘制模型
         model.draw(mVPMatrix)
+
+        // 恢复面剔除设置为默认
+        GLES20.glCullFace(GLES20.GL_BACK)
 
         // 解除帧缓冲绑定
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
@@ -115,13 +152,12 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private fun renderScene() {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
-        Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.scaleM(modelMatrix, 0, 0.33f, 0.33f, 0.33f)  // 缩小为原来的 1/3
 
-        // 设置模型的模型矩阵：旋转 + 平移
+        // 设置模型的模型矩阵：缩放 + 旋转 + 平移
         Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.rotateM(modelMatrix, 0, angleY, 0f, 1f, 0f)  // 应用旋转
-        Matrix.translateM(modelMatrix, 0, 0f, 0f, -5f)  // 模型位置
+        Matrix.scaleM(modelMatrix, 0, 0.33f * MODEL_SCALE, 0.33f * MODEL_SCALE, 0.33f * MODEL_SCALE)  // 缩小为原来的 1/3，并应用 MODEL_SCALE
+        Matrix.rotateM(modelMatrix, 0, angleY, 0f, 1f, 0f)   // 应用旋转
+        Matrix.translateM(modelMatrix, 0, 0f, 0f, -5f)        // 模型位置
 
         // 计算 MVP 矩阵
         Matrix.multiplyMM(tempMatrix, 0, viewMatrix, 0, modelMatrix, 0)
@@ -211,6 +247,56 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // 静态常量定义缩放因子
         private const val SCALE_FACTOR = 0.5f        // 整体缩小为原来的 1/2
         private const val Y_STRETCH_FACTOR = 2.0f    // y 轴拉伸两倍
+
+        // 镜子模式常量
+        const val MIRROR_MODE_FORWARD = 0   // 正对用户
+        const val MIRROR_MODE_BACKWARD = 1  // 背对用户
+
+        // 镜子旋转方向常量
+        const val ROTATION_CLOCKWISE = 0           // 顺时针旋转
+        const val ROTATION_COUNTERCLOCKWISE = 1    // 逆时针旋转
+
+        // 当前镜子模式，默认为正对用户
+        @Volatile
+        var MIRROR_MODE = MIRROR_MODE_FORWARD
+
+        // 当前镜子旋转方向，默认为顺时针
+        @Volatile
+        var ROTATION_DIRECTION = ROTATION_CLOCKWISE
+
+        // 新增：模型缩放参数，默认为1.0f（原始大小）
+        @Volatile
+        var MODEL_SCALE = 2.0f
+
+        /**
+         * 设置镜子的模式
+         * @param mode 0 代表正对用户，1 代表背对用户
+         */
+        fun setMirrorMode(mode: Int) {
+            if (mode == MIRROR_MODE_FORWARD || mode == MIRROR_MODE_BACKWARD) {
+                MIRROR_MODE = mode
+            }
+        }
+
+        /**
+         * 设置镜子中模型的旋转方向
+         * @param direction 0 代表顺时针，1 代表逆时针
+         */
+        fun setRotationDirection(direction: Int) {
+            if (direction == ROTATION_CLOCKWISE || direction == ROTATION_COUNTERCLOCKWISE) {
+                ROTATION_DIRECTION = direction
+            }
+        }
+
+        /**
+         * 设置模型的缩放比例
+         * @param scale 缩放比例，必须大于0
+         */
+        fun setModelScale(scale: Float) {
+            if (scale > 0f) {
+                MODEL_SCALE = scale
+            }
+        }
 
         fun loadShader(type: Int, shaderCode: String): Int {
             val shader = GLES20.glCreateShader(type)
