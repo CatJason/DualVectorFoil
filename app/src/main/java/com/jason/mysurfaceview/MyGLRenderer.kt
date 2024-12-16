@@ -87,12 +87,22 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
             0f, 1f, 0f      // 头顶方向向上
         )
 
-        // 设置模型矩阵：旋转 + 平移到反射位置
+        // 设置模型矩阵：整体缩放 + y 轴缩放 + 旋转 + 平移到反射位置
         Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.rotateM(modelMatrix, 0, angleY, 0f, 1f, 0f)  // 应用旋转
+
+        // 应用整体缩放
+        Matrix.scaleM(modelMatrix, 0, SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR)
+
+        // 应用 y 轴额外缩放
+        Matrix.scaleM(modelMatrix, 0, 1f, Y_STRETCH_FACTOR, 1f)  // 仅 y 轴缩放
+
+        // 应用旋转
+        Matrix.rotateM(modelMatrix, 0, angleY, 0f, 1f, 0f)  // 绕 y 轴旋转
+
+        // 应用平移
         Matrix.translateM(modelMatrix, 0, 0f, 0f, 5f)  // 模型位置反射到 Z 轴正方向
 
-        // 计算MVP矩阵
+        // 计算 MVP 矩阵
         Matrix.multiplyMM(tempMatrix, 0, viewMatrixReflection, 0, modelMatrix, 0)
         Matrix.multiplyMM(mVPMatrix, 0, projectionMatrix, 0, tempMatrix, 0)
 
@@ -105,6 +115,7 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private fun renderScene() {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+        Matrix.setIdentityM(modelMatrix, 0)
         Matrix.scaleM(modelMatrix, 0, 0.33f, 0.33f, 0.33f)  // 缩小为原来的 1/3
 
         // 设置模型的模型矩阵：旋转 + 平移
@@ -112,7 +123,7 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.rotateM(modelMatrix, 0, angleY, 0f, 1f, 0f)  // 应用旋转
         Matrix.translateM(modelMatrix, 0, 0f, 0f, -5f)  // 模型位置
 
-        // 计算MVP矩阵
+        // 计算 MVP 矩阵
         Matrix.multiplyMM(tempMatrix, 0, viewMatrix, 0, modelMatrix, 0)
         Matrix.multiplyMM(mVPMatrix, 0, projectionMatrix, 0, tempMatrix, 0)
 
@@ -123,7 +134,7 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.setIdentityM(modelMatrix, 0)
         Matrix.rotateM(modelMatrix, 0, angleY, 0f, 1f, 0f)  // 应用旋转
 
-        // 计算MVP矩阵
+        // 计算 MVP 矩阵
         Matrix.multiplyMM(tempMatrix, 0, viewMatrix, 0, modelMatrix, 0)
         Matrix.multiplyMM(mVPMatrix, 0, projectionMatrix, 0, tempMatrix, 0)
 
@@ -197,6 +208,10 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     }
 
     companion object {
+        // 静态常量定义缩放因子
+        private const val SCALE_FACTOR = 0.5f        // 整体缩小为原来的 1/2
+        private const val Y_STRETCH_FACTOR = 2.0f    // y 轴拉伸两倍
+
         fun loadShader(type: Int, shaderCode: String): Int {
             val shader = GLES20.glCreateShader(type)
             GLES20.glShaderSource(shader, shaderCode)
