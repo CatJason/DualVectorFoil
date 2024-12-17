@@ -81,56 +81,20 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private val whiteFragmentShaderCode = """
     precision mediump float;
-    uniform vec4 uColor;
-    uniform sampler2D uTexture;
+    uniform sampler2D uTexture;  // 纹理采样器
     varying vec2 vTexCoord;
 
-    // Gaussian blur function
-    vec4 gaussianBlur(sampler2D tex, vec2 uv, float offset, float sigma) {
-        vec4 color = vec4(0.0);
-        float weight[9];
-        
-        // 3x3 高斯权重矩阵（根据 sigma 动态计算）
-        // 计算高斯权重
-        float totalWeight = 0.0;
-        int index = 0;
-        for (float x = -1.0; x <= 1.0; x++) {
-            for (float y = -1.0; y <= 1.0; y++) {
-                float distance = x * x + y * y;
-                weight[index] = exp(-distance / (2.0 * sigma * sigma)) / (2.0 * 3.14159 * sigma * sigma);
-                totalWeight += weight[index];
-                index++;
-            }
-        }
-
-        // 对权重进行归一化
-        for (int i = 0; i < 9; i++) {
-            weight[i] /= totalWeight;
-        }
-
-        // Apply the Gaussian blur using the calculated kernel
-        index = 0;
-        for (float x = -1.0; x <= 1.0; x++) {
-            for (float y = -1.0; y <= 1.0; y++) {
-                vec2 offsetUV = uv + vec2(x, y) * offset;
-                color += texture2D(tex, offsetUV) * weight[index];
-                index++;
-            }
-        }
-        
-        return color;
-    }
-
     void main() {
-        // Apply Gaussian blur with standard deviation (sigma) and offset
-        float sigma = 1.0;  // Adjust sigma to control blur strength
-        vec4 blurredTextureColor = gaussianBlur(uTexture, vTexCoord, 0.005, sigma);
+        // 直接采样纹理颜色
+        vec4 textureColor = texture2D(uTexture, vTexCoord);
 
-        // Mix the blurred texture color with the white color
-        gl_FragColor = mix(blurredTextureColor, uColor, 0.2); // 50% transparency
+        // 创建白色透明度为 20% 的蒙版
+        vec4 whiteMask = vec4(1.0, 1.0, 1.0, 0.4);  // 白色，透明度为 20%
+
+        // 混合纹理颜色和蒙版
+        gl_FragColor = mix(textureColor, whiteMask, whiteMask.a);
     }
 """.trimIndent()
-
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
