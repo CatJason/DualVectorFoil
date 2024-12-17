@@ -85,27 +85,52 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     uniform sampler2D uTexture;
     varying vec2 vTexCoord;
 
-    // Box blur function
-    vec4 boxBlur(sampler2D tex, vec2 uv, float offset) {
+    // Gaussian blur function
+    vec4 gaussianBlur(sampler2D tex, vec2 uv, float offset, float sigma) {
         vec4 color = vec4(0.0);
-        float count = 0.0;
+        float weight[9];
+        
+        // 3x3 高斯权重矩阵（根据 sigma 动态计算）
+        // 计算高斯权重
+        float totalWeight = 0.0;
+        int index = 0;
         for (float x = -1.0; x <= 1.0; x++) {
             for (float y = -1.0; y <= 1.0; y++) {
-                color += texture2D(tex, uv + vec2(x, y) * offset);
-                count += 1.0;
+                float distance = x * x + y * y;
+                weight[index] = exp(-distance / (2.0 * sigma * sigma)) / (2.0 * 3.14159 * sigma * sigma);
+                totalWeight += weight[index];
+                index++;
             }
         }
-        return color / count;
+
+        // 对权重进行归一化
+        for (int i = 0; i < 9; i++) {
+            weight[i] /= totalWeight;
+        }
+
+        // Apply the Gaussian blur using the calculated kernel
+        index = 0;
+        for (float x = -1.0; x <= 1.0; x++) {
+            for (float y = -1.0; y <= 1.0; y++) {
+                vec2 offsetUV = uv + vec2(x, y) * offset;
+                color += texture2D(tex, offsetUV) * weight[index];
+                index++;
+            }
+        }
+        
+        return color;
     }
 
     void main() {
-        // Apply box blur
-        vec4 blurredTextureColor = boxBlur(uTexture, vTexCoord, 0.005);
+        // Apply Gaussian blur with standard deviation (sigma) and offset
+        float sigma = 1.0;  // Adjust sigma to control blur strength
+        vec4 blurredTextureColor = gaussianBlur(uTexture, vTexCoord, 0.005, sigma);
 
         // Mix the blurred texture color with the white color
         gl_FragColor = mix(blurredTextureColor, uColor, 0.5); // 50% transparency
     }
 """.trimIndent()
+
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
