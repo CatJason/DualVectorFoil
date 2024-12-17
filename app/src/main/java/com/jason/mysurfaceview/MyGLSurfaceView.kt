@@ -1,6 +1,7 @@
 package com.jason.mysurfaceview
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 
@@ -17,5 +18,9 @@ class MyGLSurfaceView(context: Context, attrs: AttributeSet? = null) : GLSurface
 
         // 仅在绘制数据发生变化时才绘制视图
         renderMode = RENDERMODE_CONTINUOUSLY
+    }
+
+    fun setBitmap(bitmap: Bitmap?) {
+        renderer.setBitmap(bitmap)
     }
 }

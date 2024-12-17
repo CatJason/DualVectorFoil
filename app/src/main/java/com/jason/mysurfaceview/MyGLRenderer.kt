@@ -1,7 +1,7 @@
 package com.jason.mysurfaceview
 
 import android.content.Context
-import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
@@ -13,6 +13,7 @@ import java.nio.FloatBuffer
 
 class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
+    private var mBitmap: Bitmap? = null
     private var textureId = 0
     private val squareCoords = floatArrayOf(
         -1.0f, 1.0f, 0.0f,   // top left
@@ -111,7 +112,7 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glLinkProgram(program)
 
         // 获取纹理
-        textureId = loadTexture(context, R.drawable.img)
+        textureId = loadTexture()
 
         // 创建白色正方形着色器
         whiteSquareProgram = GLES20.glCreateProgram()
@@ -178,8 +179,8 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     }
 
     // 加载纹理的方法 (省略具体实现)
-    private fun loadTexture(context: Context, resourceId: Int): Int {
-        val bitmap = BitmapFactory.decodeResource(context.resources, resourceId)
+    private fun loadTexture(): Int {
+        val bitmap = mBitmap?: return -1
         val textureIds = IntArray(1)
         GLES20.glGenTextures(1, textureIds, 0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureIds[0])
@@ -202,5 +203,9 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         floatBuffer.put(array)
         floatBuffer.position(0)
         return floatBuffer
+    }
+
+    fun setBitmap(bitmap: Bitmap?) {
+        mBitmap = bitmap
     }
 }
