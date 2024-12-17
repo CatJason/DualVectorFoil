@@ -42,10 +42,10 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val whiteSquareBuffer = allocateFloatBuffer(whiteSquareCoords)
 
     private val whiteSquareTextureCoords = floatArrayOf(
-        0.0f, 0.707f,  // top left
+        0.0f, 0.699f,  // top left
         0.0f, 1.0f,  // bottom left
         1.0f, 1.0f,  // bottom right
-        1.0f, 0.707f   // top right
+        1.0f, 0.699f   // top right
     )
 
     private val whiteSquareTextureBuffer = allocateFloatBuffer(whiteSquareTextureCoords)
