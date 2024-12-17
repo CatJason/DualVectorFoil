@@ -127,7 +127,7 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         vec4 blurredTextureColor = gaussianBlur(uTexture, vTexCoord, 0.005, sigma);
 
         // Mix the blurred texture color with the white color
-        gl_FragColor = mix(blurredTextureColor, uColor, 0.5); // 50% transparency
+        gl_FragColor = mix(blurredTextureColor, uColor, 0.2); // 50% transparency
     }
 """.trimIndent()
 
