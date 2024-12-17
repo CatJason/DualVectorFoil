@@ -15,29 +15,13 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private var mBitmap: Bitmap? = null
     private var textureId = 0
-    private val squareCoords = floatArrayOf(
-        -1.0f, 1.0f, 0.0f,   // top left
-        -1.0f, -1.0f, 0.0f,   // bottom left
-        1.0f, -1.0f, 0.0f,    // bottom right
-        1.0f, 1.0f, 0.0f     // top right
-    )
-
-    private val textureCoords = floatArrayOf(
-        0.0f, 0.0f,  // top left
-        0.0f, 1.0f,  // bottom left
-        1.0f, 1.0f,  // bottom right
-        1.0f, 0.0f   // top right
-    )
-
-    private val vertexBuffer = allocateFloatBuffer(squareCoords)
-    private val textureBuffer = allocateFloatBuffer(textureCoords)
 
     // 额外的正方形坐标 (新的白色正方形)
     private val whiteSquareCoords = floatArrayOf(
-        -1.0f, -0.4f, 0.0f,   // top left
-        -1.0f, -1.2f, 0.0f,   // bottom left
-        1.0f, -1.2f, 0.0f,    // bottom right
-        1.0f, -0.4f, 0.0f     // top right
+        -1.0f, 1.0f, 0.0f,   // top left
+        -1.0f, -1.0f, 0.0f,   // bottom left
+        1.0f, -1.0f, 0.0f,    // bottom right
+        1.0f, 1.0f, 0.0f      // top right
     )
 
     private val whiteSquareBuffer = allocateFloatBuffer(whiteSquareCoords)
@@ -57,7 +41,6 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var whiteSquareProgram: Int = 0
     private var program: Int = 0
     private var vertexShader: Int = 0
-    private var fragmentShader: Int = 0
     private var whiteFragmentShader: Int = 0
 
     // 加载着色器代码
@@ -68,15 +51,6 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         void main() {
             gl_Position = vPosition;
             vTexCoord = aTexCoord;
-        }
-    """.trimIndent()
-
-    private val fragmentShaderCode = """
-        precision mediump float;
-        uniform sampler2D uTexture;
-        varying vec2 vTexCoord;
-        void main() {
-            gl_FragColor = texture2D(uTexture, vTexCoord);
         }
     """.trimIndent()
 
@@ -103,12 +77,10 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         // 加载着色器并创建 OpenGL 程序
         vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
-        fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
         whiteFragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, whiteFragmentShaderCode)
 
         program = GLES20.glCreateProgram()
         GLES20.glAttachShader(program, vertexShader)
-        GLES20.glAttachShader(program, fragmentShader)
         GLES20.glLinkProgram(program)
 
         // 获取纹理
@@ -143,11 +115,11 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // 绘制纹理
         GLES20.glUseProgram(program)
         val positionHandleTex = GLES20.glGetAttribLocation(program, "vPosition")
-        GLES20.glVertexAttribPointer(positionHandleTex, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer)
+        GLES20.glVertexAttribPointer(positionHandleTex, 3, GLES20.GL_FLOAT, false, 0, whiteSquareBuffer)
         GLES20.glEnableVertexAttribArray(positionHandleTex)
 
         val texCoordHandleTex = GLES20.glGetAttribLocation(program, "aTexCoord")
-        GLES20.glVertexAttribPointer(texCoordHandleTex, 2, GLES20.GL_FLOAT, false, 0, textureBuffer)
+        GLES20.glVertexAttribPointer(texCoordHandleTex, 2, GLES20.GL_FLOAT, false, 0, whiteSquareTextureBuffer)
         GLES20.glEnableVertexAttribArray(texCoordHandleTex)
 
         // 绑定纹理

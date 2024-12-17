@@ -2,6 +2,7 @@ package com.jason.mysurfaceview
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.PixelFormat
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 
@@ -12,7 +13,6 @@ class MyGLSurfaceView(context: Context, attrs: AttributeSet? = null) : GLSurface
     init {
         // 创建 OpenGL ES 2.0 上下文
         setEGLContextClientVersion(2)
-
         renderer = MyGLRenderer(context)
         setRenderer(renderer)
 
