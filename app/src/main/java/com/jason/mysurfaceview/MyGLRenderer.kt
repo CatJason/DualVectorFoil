@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.opengl.GLUtils
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import java.nio.ByteBuffer
@@ -14,10 +15,10 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private var textureId = 0
     private val squareCoords = floatArrayOf(
-        -1.0f,  1.0f, 0.0f,   // top left
+        -1.0f, 1.0f, 0.0f,   // top left
         -1.0f, -1.0f, 0.0f,   // bottom left
-        1.0f, -1.0f, 0.0f,   // bottom right
-        1.0f,  1.0f, 0.0f    // top right
+        1.0f, -1.0f, 0.0f,    // bottom right
+        1.0f, 1.0f, 0.0f     // top right
     )
 
     private val textureCoords = floatArrayOf(
@@ -30,72 +31,33 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val vertexBuffer = allocateFloatBuffer(squareCoords)
     private val textureBuffer = allocateFloatBuffer(textureCoords)
 
-    // Shader IDs
+    // 额外的正方形坐标 (新的白色正方形)
+    private val whiteSquareCoords = floatArrayOf(
+        -1.0f, -0.4f, 0.0f,   // top left
+        -1.0f, -1.2f, 0.0f,   // bottom left
+        1.0f, -1.2f, 0.0f,    // bottom right
+        1.0f, -0.4f, 0.0f     // top right
+    )
+
+    private val whiteSquareBuffer = allocateFloatBuffer(whiteSquareCoords)
+
+    private val whiteSquareTextureCoords = floatArrayOf(
+        0.0f, 0.707f,  // top left
+        0.0f, 1.0f,  // bottom left
+        1.0f, 1.0f,  // bottom right
+        1.0f, 0.707f   // top right
+    )
+
+    private val whiteSquareTextureBuffer = allocateFloatBuffer(whiteSquareTextureCoords)
+
+    private val whiteColor = floatArrayOf(1.0f, 1.0f, 1.0f, 1.0f)  // 白色
+
+    // 着色器ID
+    private var whiteSquareProgram: Int = 0
+    private var program: Int = 0
     private var vertexShader: Int = 0
     private var fragmentShader: Int = 0
-    private var program: Int = 0
-
-    /**
-     * 创建一个 FloatBuffer
-     *
-     * @param array 输入的浮点数组
-     * @return 返回一个 FloatBuffer
-     */
-    private fun allocateFloatBuffer(array: FloatArray): FloatBuffer {
-        val buffer = ByteBuffer.allocateDirect(array.size * 4)  // 每个 float 占 4 字节
-        buffer.order(ByteOrder.nativeOrder())  // 设置字节顺序为本地顺序
-        val floatBuffer = buffer.asFloatBuffer()
-        floatBuffer.put(array)  // 将数据放入缓冲区
-        floatBuffer.position(0)  // 重置位置
-        return floatBuffer
-    }
-
-    override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST)
-
-        // 加载着色器并创建 OpenGL 程序
-        vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
-        fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
-
-        program = GLES20.glCreateProgram()
-        GLES20.glAttachShader(program, vertexShader)
-        GLES20.glAttachShader(program, fragmentShader)
-        GLES20.glLinkProgram(program)
-
-        // 获取着色器中的变量
-        GLES20.glUseProgram(program)
-        val positionHandle = GLES20.glGetAttribLocation(program, "vPosition")
-        val texCoordHandle = GLES20.glGetAttribLocation(program, "aTexCoord")
-        val textureHandle = GLES20.glGetUniformLocation(program, "uTexture")
-
-        // 获取纹理
-        textureId = loadTexture(context, R.drawable.img)
-
-        // 设置顶点数据
-        GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer)
-        GLES20.glEnableVertexAttribArray(positionHandle)
-
-        // 设置纹理坐标数据
-        GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 0, textureBuffer)
-        GLES20.glEnableVertexAttribArray(texCoordHandle)
-
-        // 绑定纹理
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
-        GLES20.glUniform1i(textureHandle, 0)
-    }
-
-    override fun onDrawFrame(gl: GL10?) {
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
-
-        // 绘制纹理
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 4)
-    }
-
-    override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-        GLES20.glViewport(0, 0, width, height)
-    }
+    private var whiteFragmentShader: Int = 0
 
     // 加载着色器代码
     private val vertexShaderCode = """
@@ -117,6 +79,100 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         }
     """.trimIndent()
 
+    private val whiteFragmentShaderCode = """
+    precision mediump float;
+    uniform vec4 uColor;
+    uniform sampler2D uTexture;
+    varying vec2 vTexCoord;
+
+    // Box blur function
+    vec4 boxBlur(sampler2D tex, vec2 uv, float offset) {
+        vec4 color = vec4(0.0);
+        float count = 0.0;
+        for (float x = -1.0; x <= 1.0; x++) {
+            for (float y = -1.0; y <= 1.0; y++) {
+                color += texture2D(tex, uv + vec2(x, y) * offset);
+                count += 1.0;
+            }
+        }
+        return color / count;
+    }
+
+    void main() {
+        // Apply box blur
+        vec4 blurredTextureColor = boxBlur(uTexture, vTexCoord, 0.005);
+
+        // Mix the blurred texture color with the white color
+        gl_FragColor = mix(blurredTextureColor, uColor, 0.5); // 50% transparency
+    }
+""".trimIndent()
+
+    override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+        GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST)
+
+        // 加载着色器并创建 OpenGL 程序
+        vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
+        fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
+        whiteFragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, whiteFragmentShaderCode)
+
+        program = GLES20.glCreateProgram()
+        GLES20.glAttachShader(program, vertexShader)
+        GLES20.glAttachShader(program, fragmentShader)
+        GLES20.glLinkProgram(program)
+
+        // 获取纹理
+        textureId = loadTexture(context, R.drawable.img)
+
+        // 创建白色正方形着色器
+        whiteSquareProgram = GLES20.glCreateProgram()
+        GLES20.glAttachShader(whiteSquareProgram, vertexShader)
+        GLES20.glAttachShader(whiteSquareProgram, whiteFragmentShader)
+        GLES20.glLinkProgram(whiteSquareProgram)
+    }
+
+    override fun onDrawFrame(gl: GL10?) {
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+
+        // 绘制白色正方形
+        GLES20.glUseProgram(whiteSquareProgram)
+        val positionHandle = GLES20.glGetAttribLocation(whiteSquareProgram, "vPosition")
+        GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, whiteSquareBuffer)
+        GLES20.glEnableVertexAttribArray(positionHandle)
+
+        val texCoordHandle = GLES20.glGetAttribLocation(whiteSquareProgram, "aTexCoord")
+        GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 0, whiteSquareTextureBuffer)
+        GLES20.glEnableVertexAttribArray(texCoordHandle)
+
+        // 设置白色
+        val colorHandle = GLES20.glGetUniformLocation(whiteSquareProgram, "uColor")
+        GLES20.glUniform4fv(colorHandle, 1, whiteColor, 0)
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 4)
+
+        // 绘制纹理
+        GLES20.glUseProgram(program)
+        val positionHandleTex = GLES20.glGetAttribLocation(program, "vPosition")
+        GLES20.glVertexAttribPointer(positionHandleTex, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer)
+        GLES20.glEnableVertexAttribArray(positionHandleTex)
+
+        val texCoordHandleTex = GLES20.glGetAttribLocation(program, "aTexCoord")
+        GLES20.glVertexAttribPointer(texCoordHandleTex, 2, GLES20.GL_FLOAT, false, 0, textureBuffer)
+        GLES20.glEnableVertexAttribArray(texCoordHandleTex)
+
+        // 绑定纹理
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
+        val textureHandleTex = GLES20.glGetUniformLocation(program, "uTexture")
+        GLES20.glUniform1i(textureHandleTex, 0)
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 4)
+    }
+
+    override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
+        GLES20.glViewport(0, 0, width, height)
+    }
+
     // 加载着色器
     private fun loadShader(type: Int, shaderCode: String): Int {
         val shader = GLES20.glCreateShader(type)
@@ -132,30 +188,30 @@ class MyGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         return shader
     }
 
-    // 加载纹理
+    // 加载纹理的方法 (省略具体实现)
     private fun loadTexture(context: Context, resourceId: Int): Int {
-        val texture = IntArray(1)
-        GLES20.glGenTextures(1, texture, 0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0])
-
-        // 读取图像文件
         val bitmap = BitmapFactory.decodeResource(context.resources, resourceId)
+        val textureIds = IntArray(1)
+        GLES20.glGenTextures(1, textureIds, 0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureIds[0])
 
-        // 设置纹理参数
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
 
-        // 使用 Bitmap 数据填充纹理
-        val buffer = ByteBuffer.allocateDirect(bitmap.byteCount)
-        bitmap.copyPixelsToBuffer(buffer)
-        buffer.position(0)
-        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, bitmap.width, bitmap.height, 0,
-            GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer)
-
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
         bitmap.recycle()
 
-        return texture[0]
+        return textureIds[0]
+    }
+
+    private fun allocateFloatBuffer(array: FloatArray): FloatBuffer {
+        val buffer = ByteBuffer.allocateDirect(array.size * 4)
+        buffer.order(ByteOrder.nativeOrder())
+        val floatBuffer = buffer.asFloatBuffer()
+        floatBuffer.put(array)
+        floatBuffer.position(0)
+        return floatBuffer
     }
 }
