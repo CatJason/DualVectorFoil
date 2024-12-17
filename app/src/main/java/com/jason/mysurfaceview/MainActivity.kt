@@ -40,12 +40,4 @@ class MainActivity : AppCompatActivity() {
         Log.d("MainActivity", "暂停 GLSurfaceView")
         glSurfaceView.onPause()
     }
-
-    companion object {
-        init {
-            // 加载 Assimp 库
-            Log.d("MainActivity", "加载 Assimp 库")
-            System.loadLibrary("assimpd")
-        }
-    }
 }
