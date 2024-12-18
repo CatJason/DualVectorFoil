@@ -73,13 +73,6 @@ test/
 /.idea/vcs.xml
 /.idea/
 
-# Ignore other generated files
-/gradle/
-/local.properties
-/.gradle/
-/build/
-/out/
-
 # macOS
 *.DS_Store
 
